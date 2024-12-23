@@ -7,7 +7,6 @@
 4. If the optimal solution differs from the heuristic one, the new table is displayed to the user.
 5. After both calculations, the program generates additional useful information, such as uncovered games, leagues fully/partially/not covered by the selected streaming providers, and a comprehensive list of all games offered by the streaming providers.
 - **Technologies**: The user interface was created using Streamlit.
-```
 
 ## How to run locally
 Follow these steps to run the project locally:
