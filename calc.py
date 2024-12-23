@@ -2,81 +2,79 @@ import pandas as pd
 import pulp
 import time
 
-def ILP_set_cover(game_ids, anbieter, abdeckung, preis):
+def ILP_set_cover(game_ids, providers, coverage, cost):
     """
-    Greedy-Algorithmus für das Set Cover Problem.
-    
-    :param game_ids: Liste der Spiele, die abgedeckt werden müssen
-    :param anbieter: Liste der Anbieter
-    :param abdeckung: Dictionary mit Anbieter als Schlüssel und Liste der abgedeckten Spiele als Wert
-    :param preis: Dictionary mit Anbieter als Schlüssel und den Kosten als Wert
-    :return: Liste der ausgewählten Anbieter, Preis und ungedeckte Spiele
-    """
-    covered_games = [g for g in game_ids if any(g in abdeckung[k] for k in abdeckung)]
-    uncovered_games = [g for g in game_ids if not any(g in abdeckung[k] for k in abdeckung)]
+    Integer Linear Programming (ILP) solution for the Set Cover Problem.
 
-    # Das Set-Cover Problem wird als Lineares Programmierungsproblem definiert
+    :param game_ids: List of games to be covered
+    :param providers: List of providers
+    :param coverage: Dictionary with provider as key and list of covered games as value
+    :param cost: Dictionary with provider as key and their cost as value
+    :return: List of selected providers, total cost, and uncovered games
+    """
+    covered_games = [g for g in game_ids if any(g in coverage[k] for k in coverage)]
+    uncovered_games = [g for g in game_ids if not any(g in coverage[k] for k in coverage)]
+
+    # Define the Set Cover problem as a Linear Programming problem
     problem = pulp.LpProblem("MinimalCostPackages", pulp.LpMinimize)
 
-    #Entscheidungsvariablen: Alle Anbieter ob diese gekauft werden oder nicht
-    x = pulp.LpVariable.dicts('Anbieter', anbieter, cat='Binary')
+    # Decision variables: Whether to select a provider or not
+    x = pulp.LpVariable.dicts('Provider', providers, cat='Binary')
 
-    #Zielminimierung: Möglichst geringe kosten, 0/1 ob anbieter ausgewählt wird * preis
-    problem += pulp.lpSum(preis[k]*x[k] for k in anbieter)
+    # Objective function: Minimize cost, 0/1 if provider is selected * cost
+    problem += pulp.lpSum(cost[k] * x[k] for k in providers)
 
-    #Einschränkungen: Jedes Spiel muss ansehbar sein wenn es auch angeboten wird
+    # Constraints: Every game must be covered if offered by any provider
     for g in covered_games:
         problem += pulp.lpSum([
-            x[k] for k in anbieter if k in abdeckung and g in abdeckung[k]
-        ]) >= 1, f"Deckung_{g}"
+            x[k] for k in providers if k in coverage and g in coverage[k]
+        ]) >= 1, f"Coverage_{g}"
 
-    problem.solve() # Hier wird Branch-and-Cut verwendet
+    problem.solve()  # Uses Branch-and-Cut algorithm
 
-    selected_provider = []
+    selected_providers = []
 
-    for a in anbieter:
-        if pulp.value(x[a]) == 1:
-            selected_provider.append(a)
+    for p in providers:
+        if pulp.value(x[p]) == 1:
+            selected_providers.append(p)
 
-    # Kosten minimieren
-    price = pulp.value(problem.objective)
+    # Minimize total cost
+    total_cost = pulp.value(problem.objective)
 
-    return {"ausgewählte_anbieter": selected_provider, "preis": price, "ungedeckte_spiele": uncovered_games}
+    return {"selected_providers": selected_providers, "cost": total_cost, "uncovered_games": uncovered_games}
 
 
-def greedy_set_cover(game_ids, anbieter, abdeckung, preis):
+def greedy_set_cover(game_ids, providers, coverage, cost):
     """
-    Greedy-Algorithmus für das Set Cover Problem.
-    
-    :param game_ids: Liste der Spiele, die abgedeckt werden müssen
-    :param anbieter: Liste der Anbieter
-    :param abdeckung: Dictionary mit Anbieter als Schlüssel und Liste der abgedeckten Spiele als Wert
-    :param preis: Dictionary mit Anbieter als Schlüssel und den Kosten als Wert
-    :return: Liste der ausgewählten Anbieter
-    """
-    covered_games = [g for g in game_ids if any(g in abdeckung[k] for k in abdeckung)]
-    uncovered_games = [g for g in game_ids if not any(g in abdeckung[k] for k in abdeckung)]
+    Greedy algorithm for the Set Cover Problem.
 
-    open_games = set(covered_games)  # Noch nicht abgedeckte Spiele
-    selected_providers = []          # Ausgewählte Anbieter
-    
+    :param game_ids: List of games to be covered
+    :param providers: List of providers
+    :param coverage: Dictionary with provider as key and list of covered games as value
+    :param cost: Dictionary with provider as key and their cost as value
+    :return: List of selected providers, total cost, and uncovered games
+    """
+    covered_games = [g for g in game_ids if any(g in coverage[k] for k in coverage)]
+    uncovered_games = [g for g in game_ids if not any(g in coverage[k] for k in coverage)]
+
+    open_games = set(covered_games)  # Games not yet covered
+    selected_providers = []          # Selected providers
+
     while open_games:
-        # Finde den Anbieter mit dem besten Preis-Leistungs-Verhältnis
+        # Find the provider with the best price-performance ratio
         best_provider = max(
-            anbieter,
-            key=lambda a: (
-                len(open_games & set(abdeckung.get(a, []))) / preis[a] if preis[a] > 0 else 0
+            providers,
+            key=lambda p: (
+                len(open_games & set(coverage.get(p, []))) / cost[p] if cost[p] > 0 else 0
             )
         )
-        
-        # Füge den Anbieter zur Lösung hinzu
+
+        # Add the provider to the solution
         selected_providers.append(best_provider)
-        
-        # Entferne die von diesem Anbieter abgedeckten Spiele aus der Liste
-        open_games -= set(abdeckung.get(best_provider, []))
 
-    price = 0
-    for p in selected_providers:
-        price += preis[p]
+        # Remove games covered by this provider from the list
+        open_games -= set(coverage.get(best_provider, []))
 
-    return {'ausgewählte_anbieter': selected_providers, 'preis': price,'ungedeckte_spiele': uncovered_games}
+    total_cost = sum(cost[p] for p in selected_providers)
+
+    return {'selected_providers': selected_providers, 'cost': total_cost, 'uncovered_games': uncovered_games}
