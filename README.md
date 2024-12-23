@@ -9,8 +9,6 @@
 - **Technologies**: The user interface was created using Streamlit.
 ```
 
----
-
 ## How to run locally
 Follow these steps to run the project locally:
 
@@ -47,8 +45,6 @@ Follow these steps to run the project locally:
 2. Open the application in your browser:
    - By default, the app will be available at [http://localhost:8501](http://localhost:8501).
 
----
-
 ## Project Structure
 Describe the structure of the project:
 ```
@@ -65,8 +61,6 @@ project/
 ├── requirements.txt      # List of dependencies
 └── README.md             # Project description
 ```
-
----
 
 ## Features
 - Select favorite teams through a user-friendly interface.
