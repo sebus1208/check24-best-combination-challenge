@@ -38,8 +38,6 @@ choice = st.multiselect(
     default=["Bayern München"]
 )
 
-
-
 if st.button("Berechnung starten"):
     if choice:
         with st.spinner("Lösung wird noch berechnet..."):
@@ -55,13 +53,15 @@ if st.button("Berechnung starten"):
 
                 if greedy["preis"] > optimum["preis"]:
                     st.table(optimum_anbieter)
+                else:
+                    optimum = greedy
 
             with st.expander("Nicht gezeigte Spiele:"):
                 for spiel_id in optimum["ungedeckte_spiele"]:
                     spiel = game[game["id"]==spiel_id]
                     st.write(f"{spiel['team_home'].iloc[0]} gegen {spiel['team_away'].iloc[0]} - {spiel['tournament_name'].iloc[0]}")
 
-            with st.expander("Liga Informationen der Anbieter:"):
+            with st.expander("Liga Informationen der Anbieter (aller dargestellten Spiele):"):
                 liga_optimum = present.liga_info(optimum)
                 st.table(liga_optimum)
 
